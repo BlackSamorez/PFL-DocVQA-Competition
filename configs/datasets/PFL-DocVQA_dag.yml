@@ -1,4 +1,4 @@
 dataset_name: PFL-DocVQA
-imdb_dir: /data/shared/PFL-DocVQA/imdb
-images_dir: /data/shared/PFL-DocVQA/images
-provider_docs: /data/shared/PFL-DocVQA/imdb/data_points.json
+imdb_dir: /home/black_samorez/diplom/data/nips/imdb
+images_dir: /home/black_samorez/diplom/data/nips/images
+provider_docs: /home/black_samorez/diplom/data/nips/imdb/data_points.json
