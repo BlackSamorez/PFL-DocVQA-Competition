@@ -91,7 +91,7 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
                     'lr': optimizer.param_groups[0]['lr'],
                     'grad_scale': scaler.get_scale(),
                 }
-                log_dict.update({f"{k}@{client_id:02}": v for k, v in log_dict.items()})
+                log_dict.update({f"{k}@{client_id}": v for k, v in log_dict.items()})
 
                 logger.logger.log(log_dict)
                 pbar.update()
