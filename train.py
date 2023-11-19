@@ -4,6 +4,7 @@ import os
 import random
 from collections import OrderedDict
 from communication.log_communication import log_communication
+from communication.compute_tensor_size import get_bytes_for_tensor
 
 import flwr as fl
 import numpy as np
@@ -36,6 +37,7 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
     frozen_parameters = [not keyed_parameters[n] if n in keyed_parameters else False for n, p in model.model.state_dict().items()]
 
     logger.current_epoch += 1
+    logger.bits_downlink += sum([get_bytes_for_tensor(w_0) for w_0, is_frozen in zip(parameters, frozen_parameters) if not is_frozen])
 
     agg_update = None
     if not config.use_dp and len(data_loaders) > 1:
@@ -86,8 +88,10 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
                     'Train/Batch loss': outputs.loss.item(),
                     'Train/Batch Accuracy': np.mean(metric['accuracy']),
                     'Train/Batch ANLS': np.mean(metric['anls']),
-                    'lr': optimizer.param_groups[0]['lr']
+                    'lr': optimizer.param_groups[0]['lr'],
+                    'grad_scale': scaler.get_scale(),
                 }
+                log_dict.update({f"{k}@{client_id:02}": v for k, v in log_dict.items()})
 
                 logger.logger.log(log_dict)
                 pbar.update()
@@ -133,20 +137,22 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
     upd_weights = [torch.add(agg_upd, w_0).cpu() for agg_upd, w_0, is_frozen in zip(agg_update, copy.deepcopy(parameters), frozen_parameters) if not is_frozen]  # Send weights of NON-Frozen layers.
 
     pbar.close()
+    
+    # if fl_config["log_path"] is not None:
+    if config.flower:
+        # log_communication(federated_round=fl_config.current_round, sender=client_id, receiver=-1, data=upd_weights, log_location=logger.comms_log_file)  # Store model's weights bytes.
+        log_communication(federated_round=fl_config.current_round, sender=client_id, receiver=-1, data=upd_weights, log_location=logger.comms_log_file)  # Store only communicated weights (sent parameters).
+    logger.bits_uplink += sum([get_bytes_for_tensor(w_0) for w_0 in upd_weights])
 
     fl_round_log_dict = {
         'Train/FL Round loss': total_loss / total_training_samples,
         'Train/FL Round Accuracy': fl_round_acc / total_training_samples,
         'Train/FL Round ANLS': fl_round_anls / total_training_samples,
-        'fl_round': logger.current_epoch
+        'fl_round': logger.current_epoch,
+        'bits_total': logger.bits_total, 
     }
 
     logger.logger.log(fl_round_log_dict)
-
-    # if fl_config["log_path"] is not None:
-    if config.flower:
-        # log_communication(federated_round=fl_config.current_round, sender=client_id, receiver=-1, data=upd_weights, log_location=logger.comms_log_file)  # Store model's weights bytes.
-        log_communication(federated_round=fl_config.current_round, sender=client_id, receiver=-1, data=upd_weights, log_location=logger.comms_log_file)  # Store only communicated weights (sent parameters).
 
     # Send the weights to the server
     return upd_weights
@@ -266,6 +272,7 @@ if __name__ == '__main__':
         # evaluate_fn=fl_centralized_evaluation,  # Pass the centralized evaluation function
         on_evaluate_config_fn=get_config_fn(),
     )
+    print(f"{config.fl_params.sample_clients=}")
 
     # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)
     client_resources = None

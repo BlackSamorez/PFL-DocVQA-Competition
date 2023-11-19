@@ -19,7 +19,7 @@ training_parameters:
 fl_parameters:
   sample_clients: 2
   total_clients: 10
-  num_rounds: 50
+  num_rounds: 10
   iterations_per_fl_round: 1
 
 dp_parameters:

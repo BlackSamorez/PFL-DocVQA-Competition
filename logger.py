@@ -50,12 +50,19 @@ class Logger(metaclass=Singleton):
             })
 
         self.logger = wb.init(project="PFL-DocVQA-Competition", name=self.experiment_name, dir=self.log_folder, tags=tags, config=log_config)
-        self.logger.define_metric("Train/FL Round *", step_metric="fl_round")
-        self.logger.define_metric("Val/FL Round *", step_metric="fl_round")
+        self.logger.define_metric("Train/FL Round *", step_metric="bits_total")
+        self.logger.define_metric("Val/FL Round *", step_metric="bits_total")
         self._print_config(log_config)
 
         self.current_epoch = 0
+        self.bits_uplink = 0
+        self.bits_downlink = 0
         self.len_dataset = 0
+    
+    
+    @property
+    def bits_total(self):
+        return self.bits_uplink + self.bits_downlink
 
     def _print_config(self, config):
         print("{:s}: {:s} \n{{".format(config['Model'], config['Weights']))
