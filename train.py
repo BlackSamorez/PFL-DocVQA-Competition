@@ -242,6 +242,11 @@ if __name__ == '__main__':
     os.environ['MASTER_PORT'] = '9957'
 
     model = build_model(config)
+    
+    # for name, p in model.model.named_parameters():
+    #     print(p.requires_grad, name)
+    # exit(0)
+    
     params = get_parameters_from_model(model)
 
     # Create FedAvg strategy

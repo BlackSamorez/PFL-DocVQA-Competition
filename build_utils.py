@@ -27,6 +27,22 @@ def build_optimizer(model, length_train_loader, config):
     return optimizer, lr_scheduler
 """
 
+
+def add_lora(model):
+    from models.VT5 import VT5
+    assert isinstance(model, VT5)
+    
+    from peft import LoraModel, LoraConfig
+    
+    config = LoraConfig(
+        r=32,
+        lora_alpha=32,
+        target_modules=["q", "v", "o", "wi", "wo"],
+        lora_dropout=0.01,
+    )
+    model.model.language_backbone = LoraModel(model.model.language_backbone, config, "default")
+
+
 def build_model(config):
 
     available_models = ['t5', 'vt5']
@@ -37,6 +53,7 @@ def build_model(config):
     elif config.model_name.lower() == 'vt5':
         from models.VT5 import VT5
         model = VT5(config)
+        add_lora(model)
 
     else:
         raise ValueError("Value '{:s}' for model selection not expected. Please choose one of {:}".format(config.model_name, ', '.join(available_models)))
