@@ -58,18 +58,21 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
         # Reset the optimizer
         if config.use_dp:
             optimizer = build_optimizer(model, config)
+        scaler = torch.cuda.amp.GradScaler()
 
         # Perform N provider iterations (each provider has their own dataloader in the non-private case)
         for iter in range(config.fl_params.iterations_per_fl_round):
             for batch_idx, batch in enumerate(provider_dataloader):
 
                 gt_answers = batch['answers']
-                outputs, pred_answers, answer_conf = model.forward(batch, return_pred_answer=True)
+                with torch.autocast(device_type="cuda", dtype=torch.float16):
+                    outputs, pred_answers, answer_conf = model.forward(batch, return_pred_answer=True)
                 loss = outputs.loss
 
                 # total_loss += loss.item() / len(batch['question_id'])
-                loss.backward()
-                optimizer.step()
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
                 # lr_scheduler.step()
                 optimizer.zero_grad()
 
