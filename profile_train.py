@@ -1,6 +1,7 @@
 import copy
 import json
 import os
+os.environ["OMP_NUM_THREADS"] = "8"
 import random
 from collections import OrderedDict
 from communication.log_communication import log_communication
@@ -10,7 +11,7 @@ import flwr as fl
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from datasets.PFL_DocVQA import collate_fn
+from datasets.PFL_DocVQA import collate_fn, collate_fn_preprocessed
 
 from tqdm import tqdm
 from build_utils import (build_dataset, build_model, build_optimizer, build_provider_dataset)
@@ -22,6 +23,8 @@ from checkpoint import save_model
 from utils import load_config, parse_args, seed_everything
 from utils_parallel import get_parameters_from_model, set_parameters_model, weighted_average
 from collections import OrderedDict
+
+torch.set_num_threads(8)
 
 
 def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_config):
@@ -67,7 +70,7 @@ def fl_train(data_loaders, model, optimizer, evaluator, logger, client_id, fl_co
 
                 gt_answers = batch['answers']
                 with torch.autocast(device_type="cuda", dtype=torch.float16):
-                    outputs, pred_answers, answer_conf = model.forward(batch, return_pred_answer=True)
+                    outputs, pred_answers, answer_conf = model.forward(batch, return_pred_answer=True, preprocessed=config.preprocessed)
                 loss = outputs.loss
 
                 # total_loss += loss.item() / len(batch['question_id'])
@@ -175,7 +178,7 @@ if __name__ == '__main__':
     
     params = get_parameters_from_model(model)
     train_dataset = build_dataset(config, 'train', client_id=0)
-    dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
+    dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn_preprocessed if config.preprocessed else collate_fn)
     
     evaluator = Evaluator(case_sensitive=False)
     logger = Logger(config=config)

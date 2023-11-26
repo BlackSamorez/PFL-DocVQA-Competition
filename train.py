@@ -10,7 +10,7 @@ import flwr as fl
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from datasets.PFL_DocVQA import collate_fn
+from datasets.PFL_DocVQA import collate_fn, collate_fn_preprocessed
 
 from tqdm import tqdm
 from build_utils import (build_dataset, build_model, build_optimizer, build_provider_dataset)
@@ -211,12 +211,12 @@ def client_fn(client_id):
     else:
         train_datasets = [build_dataset(config, 'train', client_id=client_id)]
 
-    train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn) for train_dataset in train_datasets]
+    train_data_loaders = [DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn_preprocessed if config.preprocessed else collate_fn) for train_dataset in train_datasets]
     total_training_steps = sum([len(data_loader) for data_loader in train_data_loaders])
 
     # Create validation data loader
     val_dataset = build_dataset(config, 'val')
-    val_data_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
+    val_data_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn_preprocessed if config.preprocessed else collate_fn)
 
     # lr_scheduler disabled due to malfunction in FL setup.
     # optimizer, lr_scheduler = build_optimizer(model, length_train_loader=total_training_steps, config=config)

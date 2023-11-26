@@ -13,13 +13,13 @@ visual_module:
 
 training_parameters:
   lr: 2e-4  # 2e-4
-  batch_size: 16
+  batch_size: 1
   # warmup_iterations: 1000
 
 fl_parameters:
   sample_clients: 2
   total_clients: 10
-  num_rounds: 10
+  num_rounds: 1
   iterations_per_fl_round: 1
 
 dp_parameters:

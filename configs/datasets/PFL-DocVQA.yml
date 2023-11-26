@@ -2,3 +2,5 @@ dataset_name: PFL-DocVQA
 imdb_dir: /home/black_samorez/diplom/data/nips/imdb
 images_dir:  /home/black_samorez/diplom/data/nips/images
 provider_docs:  /home/black_samorez/diplom/data/nips/imdb/data_points.json
+data_dir: /home/black_samorez/diplom/data/nips/preprocessed
+preprocessed: false

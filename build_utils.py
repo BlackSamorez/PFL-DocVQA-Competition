@@ -78,9 +78,13 @@ def build_dataset(config, split, client_id=None):
 
     # Build dataset
     if config.dataset_name == 'PFL-DocVQA':
-        from datasets.PFL_DocVQA import PFL_DocVQA
-        dataset = PFL_DocVQA(config.imdb_dir, config.images_dir, split, dataset_kwargs)
-
+        if config.preprocessed:
+            from datasets.PFL_DocVQA import PFL_DocVQA_preprocessed
+            dataset = PFL_DocVQA_preprocessed(config.data_dir, split, dataset_kwargs)
+        else:
+            from datasets.PFL_DocVQA import PFL_DocVQA
+            dataset = PFL_DocVQA(config.imdb_dir, config.images_dir, split, dataset_kwargs)
+            
     else:
         raise ValueError
 

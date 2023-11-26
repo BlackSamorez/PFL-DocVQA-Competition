@@ -90,15 +90,32 @@ class VT5:
             labels = None
 
         return input_embeds, tensor_attention_mask, labels
+    
+    def prepare_inputs_for_vqa_preprocessed(self, tensor_input_ids, tensor_boxes, tensor_attention_mask, visual_embedding, visual_emb_mask, labels):
+        semantic_embedding = self.model.language_backbone.shared(tensor_input_ids)
+        spatial_embedding = self.model.spatial_embedding(tensor_boxes)
+        input_embeds = torch.add(semantic_embedding, spatial_embedding)
+        input_embeds = torch.cat([input_embeds, visual_embedding], dim=1)  # Concatenate semantic + visual embeddings TODO: Provide visual bounding boxes.
+        tensor_attention_mask = torch.cat([tensor_attention_mask, visual_emb_mask], dim=1)
+        return input_embeds, tensor_attention_mask, labels
 
-    def forward(self, batch, return_pred_answer=False):
-        question = batch['questions']
-        words = batch['words']
-        boxes = batch['boxes']
-        images = batch['images']
-        answers = batch['answers']
-
-        input_embeds, attention_mask, labels = self.prepare_inputs_for_vqa(question, words, boxes, images, answers)
+    def forward(self, batch, return_pred_answer=False, preprocessed=True):
+        if preprocessed:
+            tensor_input_ids = batch["tensor_input_ids"].to(self.model.device)
+            tensor_boxes = batch["tensor_boxes"].to(self.model.device)
+            tensor_attention_mask = batch["tensor_attention_mask"].to(self.model.device)
+            visual_embedding = batch["visual_embedding"].to(self.model.device)
+            visual_emb_mask = batch["visual_emb_mask"].to(self.model.device)
+            labels = batch["labels"].to(self.model.device) if batch["labels"] is not None else None
+            input_embeds, attention_mask, labels = self.prepare_inputs_for_vqa_preprocessed(tensor_input_ids, tensor_boxes, tensor_attention_mask, visual_embedding, visual_emb_mask, labels)
+        else:
+            question = batch['questions']
+            words = batch['words']
+            boxes = batch['boxes']
+            images = batch['images']
+            answers = batch['answers']
+            input_embeds, attention_mask, labels = self.prepare_inputs_for_vqa(question, words, boxes, images, answers)
+            
         outputs = self.model.language_backbone(inputs_embeds=input_embeds, attention_mask=attention_mask, labels=labels)
         pred_answers, pred_answers_conf = self.get_answer_from_model_output(input_embeds, attention_mask) if return_pred_answer else None
 

@@ -92,7 +92,7 @@ if __name__ == '__main__':
     visual_embedder = build_model(config).model.visual_embedding
     tokenizer = T5Tokenizer.from_pretrained(config.model_weights)
     
-    for i in tqdm([1]):
+    for i in tqdm(range(10)):
         train_dataset = build_dataset(config, 'train', client_id=i)
         train_data_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=False, collate_fn=collate_fn)
         
@@ -118,6 +118,7 @@ if __name__ == '__main__':
                 "visual_embedding": visual_embedding,
                 "visual_emb_mask": visual_emb_mask,
                 "labels": labels,
+                "answers": answers,
             })
             
         np.save(f"/home/black_samorez/diplom/data/nips/preprocessed/train_client_{i}.npy", data, allow_pickle=True)
